@@ -1,5 +1,6 @@
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import java.net.URI;
@@ -10,9 +11,7 @@ import java.nio.file.Paths;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.List;
+import java.util.*;
 
 public class DownloadPdf {
     private static String urlPrefix = "http://digital.dtxww.com/Media/dtrb/";
@@ -49,20 +48,28 @@ public class DownloadPdf {
     public void download(String url){
         HttpClient client = HttpClient.newBuilder().connectTimeout(Duration.ofMillis(5000)).followRedirects(HttpClient.Redirect.NORMAL).build();
         HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).timeout(Duration.ofMillis(5009)).build();
+        String[] infos = url.split("/");
+        String name = infos[infos.length-1];
         try {
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
             Document document = Jsoup.parse(response.body());
-            Elements indexLis = document.select("div.tab_content").select(".tab_1>li");
-            Elements next = indexLis.next();
-            System.out.println(next.text());
-
-            // download target pdf begins
-            String href = document.select("#pdf_toolbar>a").attr("href");
-            if(href == ""|| href == null){
+            Elements indexLis = document.select("li.item2");
+            if(indexLis.size()<=0){
+                // 没有相关版面
                 return;
             }
-            client.send(HttpRequest.newBuilder().uri(URI.create(href)).build(),HttpResponse.BodyHandlers.ofFile(Paths.get("name.pdf")));
-            // download ends
+            Iterator iterator = indexLis.iterator();
+            int i = 0;
+            while (iterator.hasNext()){
+                String title = ((Element)iterator.next()).text();
+                if (title.contains("广告")) {
+                    // download target pdf begins
+                    String href = document.select("#pdf_toolbar>a").attr("href");
+                    client.send(HttpRequest.newBuilder().uri(URI.create(href)).build(), HttpResponse.BodyHandlers.ofFile(Paths.get(name + i+".pdf")));
+                    // download ends
+                }
+                i++;
+            }
         }catch (Exception e){
             e.printStackTrace();
         }
