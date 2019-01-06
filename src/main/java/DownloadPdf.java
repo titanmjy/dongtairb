@@ -14,6 +14,7 @@ import java.time.Duration;
 import java.util.*;
 
 public class DownloadPdf {
+    private static String domain = "http://digital.dtxww.com";
     private static String urlPrefix = "http://digital.dtxww.com/Media/dtrb/";
     private List<String> urls;
 
@@ -39,7 +40,7 @@ public class DownloadPdf {
 
     public static void main(String[] args) {
         DownloadPdf downloadPdf = new DownloadPdf();
-        String first = downloadPdf.getUrls().get(1);
+        String first = downloadPdf.getUrls().get(10);
         System.out.println(first);
         downloadPdf.download(first);
     }
@@ -59,13 +60,17 @@ public class DownloadPdf {
                 return;
             }
             Iterator iterator = indexLis.iterator();
-            int i = 0;
+            int i = 1;
             while (iterator.hasNext()){
-                String title = ((Element)iterator.next()).text();
+                Element current = (Element)iterator.next();
+                String title = current.text();
                 if (title.contains("广告")) {
                     // download target pdf begins
-                    String href = document.select("#pdf_toolbar>a").attr("href");
-                    client.send(HttpRequest.newBuilder().uri(URI.create(href)).build(), HttpResponse.BodyHandlers.ofFile(Paths.get(name + i+".pdf")));
+                    String suburl = current.select("a").attr("href");
+                    HttpResponse<String> targetPage = client.send((HttpRequest) HttpRequest.newBuilder().uri(URI.create(domain + suburl)).build(), HttpResponse.BodyHandlers.ofString());
+                    Document subDoc = Jsoup.parse(targetPage.body());
+                    String href = subDoc.select("#pdf_toolbar>a").attr("href");
+                    client.send(HttpRequest.newBuilder().uri(URI.create(href)).build(), HttpResponse.BodyHandlers.ofFile(Paths.get(name + "-" + i +".pdf")));
                     // download ends
                 }
                 i++;
