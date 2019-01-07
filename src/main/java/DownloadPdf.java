@@ -40,9 +40,10 @@ public class DownloadPdf {
 
     public static void main(String[] args) {
         DownloadPdf downloadPdf = new DownloadPdf();
-        String first = downloadPdf.getUrls().get(10);
-        System.out.println(first);
-        downloadPdf.download(first);
+        for(String url : downloadPdf.getUrls()) {
+            System.out.println(url);
+            downloadPdf.download(url);
+        }
     }
 
 
