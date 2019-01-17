@@ -27,7 +27,7 @@ public class DownloadPdf {
         DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
         Calendar calendar = Calendar.getInstance();
         calendar.set(Calendar.YEAR,2018);
-        for(int m=0;m<12;m++) {
+        for(int m=5;m<12;m++) {
             calendar.set(Calendar.MONTH, m);
             for (int i = 1; i <= calendar.getActualMaximum(Calendar.DAY_OF_MONTH); i++) {
                 calendar.set(Calendar.DAY_OF_MONTH, i);
