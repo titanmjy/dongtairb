@@ -2,17 +2,16 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import util.HttpUtil;
 
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.nio.file.Paths;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.time.Duration;
 import java.util.*;
 
+/**
+ * tenders information download in dt digital newspaper
+ * */
 public class DownloadPdf {
     private static String domain = "http://digital.dtxww.com";
     private static String urlPrefix = "http://digital.dtxww.com/Media/dtrb/";
@@ -27,7 +26,7 @@ public class DownloadPdf {
         DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
         Calendar calendar = Calendar.getInstance();
         calendar.set(Calendar.YEAR,2018);
-        for(int m=5;m<12;m++) {
+        for(int m=11;m<12;m++) {
             calendar.set(Calendar.MONTH, m);
             for (int i = 1; i <= calendar.getActualMaximum(Calendar.DAY_OF_MONTH); i++) {
                 calendar.set(Calendar.DAY_OF_MONTH, i);
@@ -48,12 +47,10 @@ public class DownloadPdf {
 
 
     public void download(String url){
-        HttpClient client = HttpClient.newBuilder().connectTimeout(Duration.ofMillis(5000)).followRedirects(HttpClient.Redirect.NORMAL).build();
-        HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).timeout(Duration.ofMillis(5009)).build();
         String[] infos = url.split("/");
         String name = infos[infos.length-1];
         try {
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response = HttpUtil.getSync(url);
             Document document = Jsoup.parse(response.body());
             Elements indexLis = document.select("li.item2");
             if(indexLis.size()<=0){
@@ -68,10 +65,10 @@ public class DownloadPdf {
                 if (title.contains("广告")) {
                     // download target pdf begins
                     String suburl = current.select("a").attr("href");
-                    HttpResponse<String> targetPage = client.send((HttpRequest) HttpRequest.newBuilder().uri(URI.create(domain + suburl)).build(), HttpResponse.BodyHandlers.ofString());
+                    HttpResponse<String> targetPage = HttpUtil.getSync(domain + suburl);
                     Document subDoc = Jsoup.parse(targetPage.body());
                     String href = subDoc.select("#pdf_toolbar>a").attr("href");
-                    client.send(HttpRequest.newBuilder().uri(URI.create(href)).build(), HttpResponse.BodyHandlers.ofFile(Paths.get(name + "-" + i +".pdf")));
+                    HttpUtil.downloadFile(href,name+"-"+i+".pdf");
                     // download ends
                 }
                 i++;
