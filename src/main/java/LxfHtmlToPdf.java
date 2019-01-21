@@ -31,45 +31,46 @@ public class LxfHtmlToPdf implements IHtmlToPdf {
         this.menuList = new ArrayList();
     }
 
-    public String getStartUrl(){
-        return this.startUrl;
-    }
-
     public void parseMenu(String response) {
         Document doc = Jsoup.parse(response);
         Element ulElements = doc.select(".uk-nav").select(".uk-nav-side").get(1);
         Elements aElements = ulElements.select("a.x-wiki-index-item");
         for(Element e : aElements){
-            this.menuList.add(e.attr(domain + "href"));
+            this.menuList.add(domain  + e.attr("href"));
         }
     }
 
     public String parseBody(String response) {
         Document doc = Jsoup.parse(response);
         String title = doc.select("h4").text();
-        String content = doc.select(".x-main-content").text();
+        String content = doc.select(".x-main-content").html();
 //        constract the html
         Document document = Jsoup.parse(template);
-        document.append("<h1>"+title+"</h1>");
-        document.append("<p>"+content+"</p>");
-        return document.toString();
+        Element body = document.select("body").first();
+        body.append("<h1>"+title+"</h1>");
+        body.append(content);
+        return document.html();
+    }
+
+    public void run(){
+        try {
+            HttpResponse<String> response = HttpUtil.getSync(this.startUrl);
+            parseMenu(response.body());
+            for(int i = 0;i<menuList.size();i++){
+                HttpResponse<String> contentResponse = HttpUtil.getSync(menuList.get(i));
+                String content = parseBody(contentResponse.body());
+                File f = new File(i+".html");
+                FileUtils.writeStringToFile(f,content,"UTF-8");
+                Wkhtml2PdfUtil.convert(i+".html",i+".pdf");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public static void main(String[] args) {
         LxfHtmlToPdf htmlToPdf = new LxfHtmlToPdf("lxfpython","https://www.liaoxuefeng.com/wiki/0014316089557264a6b348958f449949df42a6d3a2e542c000");
-        try {
-            String response = HttpUtil.getSync(htmlToPdf.getStartUrl()).body();
-            htmlToPdf.parseMenu(response);
-
-//            HttpResponse<String> resp = HttpUtil.getSync("https://www.liaoxuefeng.com/wiki/0014316089557264a6b348958f449949df42a6d3a2e542c000/001431608990315a01b575e2ab041168ff0df194698afac000");
-//            String s = htmlToPdf.parseBody(resp.body());
-//            File f = new File("1.html");
-//            FileUtils.writeStringToFile(f,s,"UTF-8");
-            System.out.println("ok");
-//            Wkhtml2PdfUtil.convert("1.html","1.pdf");
-        }catch (Exception e){
-            e.printStackTrace();
-        }
+        htmlToPdf.run();
     }
 
 }
